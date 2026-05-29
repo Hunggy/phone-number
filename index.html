@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>职位电话匹配测试</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>职位电话匹配测试</h1>
+      <div class="toolbar">
+        <button id="themeToggle" class="btn-icon" title="切换主题">🌙</button>
+        <button id="helpBtn" class="btn-icon" title="帮助">❓</button>
+      </div>
+    </header>
+
+    <div class="config-bar">
+      <select id="dataSelect">
+        <option value="all">全部</option>
+      </select>
+      <select id="testDirection">
+        <option value="0">职位 → 选电话</option>
+        <option value="1">电话 → 选职位</option>
+      </select>
+      <span id="progress">0 / 0</span>
+    </div>
+
+    <main id="testArea">
+      <div class="question-card">
+        <div id="questionText" class="question-text">加载中...</div>
+      </div>
+      <div id="optionsGrid" class="options-grid">
+        <button class="option-btn" data-index="0">选项1</button>
+        <button class="option-btn" data-index="1">选项2</button>
+        <button class="option-btn" data-index="2">选项3</button>
+        <button class="option-btn" data-index="3">选项4</button>
+      </div>
+    </main>
+
+    <div class="bottom-bar">
+      <button id="nextBtn" class="btn-primary" disabled>下一题 (Enter)</button>
+      <div class="shortcuts">
+        <span>1-4 选择</span>
+        <span>Enter 下一题</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <div id="helpModal" class="modal-overlay">
+    <div class="modal">
+      <h2>帮助</h2>
+      <p><strong>职位→选电话：</strong>根据职位名称，选择正确的联系电话。</p>
+      <p><strong>电话→选职位：</strong>根据电话号码，选择正确的职位名称。</p>
+      <hr>
+      <p>快捷键：</p>
+      <ul>
+        <li><kbd>1</kbd>-<kbd>4</kbd> 选择答案</li>
+        <li><kbd>Enter</kbd> / <kbd>Space</kbd> 下一题</li>
+      </ul>
+      <button id="closeHelp" class="btn-secondary">关闭</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,15 +1,20 @@
 function initApp() {
   let data = [];
   let filteredData = [];
-  let currentIndex = 0;
   let currentQuestion = null;
   let options = [];
   let correctIndex = -1;
   let answered = false;
   let triedOptions = [];
-  let direction = 0; // 0: job->phone, 1: phone->job
+  let direction = 0;
   let totalCount = 0;
   let correctCount = 0;
+
+  let roundQueue = [];
+  let roundPos = 0;
+  let roundFirstTryCorrect = {};
+  let wrongItems = [];
+  let isWrongOnlyMode = false;
 
   const questionText = document.getElementById('questionText');
   const optionsGrid = document.getElementById('optionsGrid');
@@ -35,7 +40,7 @@ function initApp() {
       const json = await res.json();
       data = json.departments || [];
       populateSelect();
-      applyFilter();
+      startRound();
     } catch (e) {
       showToast('数据加载失败');
     }
@@ -49,46 +54,66 @@ function initApp() {
       opt.textContent = dept.name;
       dataSelect.appendChild(opt);
     });
+    updateWrongOption();
+  }
+
+  function updateWrongOption() {
+    let wrongOpt = dataSelect.querySelector('option[value="wrong"]');
+    if (wrongItems.length > 0) {
+      if (!wrongOpt) {
+        wrongOpt = document.createElement('option');
+        wrongOpt.value = 'wrong';
+        dataSelect.appendChild(wrongOpt);
+      }
+      wrongOpt.textContent = `只做错题 (${wrongItems.length})`;
+    } else if (wrongOpt) {
+      wrongOpt.remove();
+    }
   }
 
   function applyFilter() {
     const val = dataSelect.value;
-    filteredData = [];
-    if (val === 'all') {
-      data.forEach(dept => {
+    isWrongOnlyMode = (val === 'wrong');
+
+    if (isWrongOnlyMode) {
+      filteredData = wrongItems.map(item => ({...item}));
+    } else {
+      filteredData = [];
+      let source = val === 'all' ? data : [data[parseInt(val)]];
+      source.forEach(dept => {
         dept.positions.forEach(p => filteredData.push({...p, department: dept.name}));
       });
-    } else {
-      const dept = data[parseInt(val)];
-      dept.positions.forEach(p => filteredData.push({...p, department: dept.name}));
     }
+    startRound();
+  }
+
+  function startRound() {
+    roundQueue = filteredData.map((_, i) => i).sort(() => Math.random() - 0.5);
+    roundPos = 0;
+    roundFirstTryCorrect = {};
     totalCount = 0;
     correctCount = 0;
     updateProgress();
-    shuffleAndShow();
+    showCurrentQuestion();
   }
 
-  function shuffleAndShow() {
-    if (filteredData.length === 0) {
-      questionText.textContent = '暂无数据';
-      optionBtns.forEach(b => b.style.display = 'none');
+  function showCurrentQuestion() {
+    if (roundPos >= roundQueue.length) {
+      finishRound();
       return;
     }
-    optionBtns.forEach(b => b.style.display = '');
-    currentIndex = Math.floor(Math.random() * filteredData.length);
-    showQuestion();
-  }
 
-  function showQuestion() {
     answered = false;
     triedOptions = [];
     nextBtn.disabled = true;
     optionBtns.forEach(btn => {
       btn.classList.remove('correct', 'wrong');
       btn.disabled = false;
+      btn.style.display = '';
     });
 
-    currentQuestion = filteredData[currentIndex];
+    const qi = roundQueue[roundPos];
+    currentQuestion = filteredData[qi];
 
     if (direction === 0) {
       questionText.textContent = currentQuestion.name;
@@ -102,7 +127,7 @@ function initApp() {
 
   function generateOptions() {
     const correctAnswer = direction === 0 ? currentQuestion.phone : currentQuestion.name;
-    const pool = filteredData.filter((_, i) => i !== currentIndex);
+    const pool = filteredData.filter((_, i) => i !== roundQueue[roundPos]);
     const available = pool.filter(p => {
       const val = direction === 0 ? p.phone : p.name;
       return !triedOptions.includes(val);
@@ -130,6 +155,9 @@ function initApp() {
       correctCount++;
       optionBtns.forEach(btn => btn.disabled = true);
       optionBtns[index].classList.add('correct');
+      if (!roundFirstTryCorrect[currentQuestion.name + '|' + currentQuestion.phone]) {
+        roundFirstTryCorrect[currentQuestion.name + '|' + currentQuestion.phone] = (triedOptions.length === 0);
+      }
       showToast('正确!');
       updateProgress();
       nextBtn.disabled = false;
@@ -137,16 +165,47 @@ function initApp() {
     } else {
       optionBtns[index].classList.add('wrong');
       optionBtns[index].disabled = true;
-      showToast('错误!');
       triedOptions.push(options[index]);
-      generateOptions();
-      renderOptions();
+      roundFirstTryCorrect[currentQuestion.name + '|' + currentQuestion.phone] = false;
+      showToast('错误!');
     }
   }
 
   function nextQuestion() {
     if (!answered) return;
-    shuffleAndShow();
+    roundPos++;
+    showCurrentQuestion();
+  }
+
+  function finishRound() {
+    const roundWrongItems = [];
+    const seen = new Set();
+    filteredData.forEach((item, i) => {
+      const key = item.name + '|' + item.phone;
+      if (roundFirstTryCorrect[key] === false && !seen.has(key)) {
+        roundWrongItems.push({...item});
+        seen.add(key);
+      }
+    });
+
+    wrongItems = roundWrongItems;
+    updateWrongOption();
+
+    const total = filteredData.length;
+    const correct = total - wrongItems.length;
+    const wrong = wrongItems.length;
+
+    questionText.innerHTML = `🎉 本轮结束<br><br>✅ 正确: ${correct}  ❌ 错误: ${wrong}  📊 共: ${total}`;
+    optionBtns.forEach(btn => btn.style.display = 'none');
+    nextBtn.disabled = true;
+
+    if (wrongItems.length > 0) {
+      showToast(`有 ${wrong} 题做错，可在下拉框选"只做错题"继续练习`);
+    } else {
+      showToast('全部答对，太棒了!');
+    }
+
+    progress.textContent = `${correct} / ${total}`;
   }
 
   function updateProgress() {
@@ -181,7 +240,7 @@ function initApp() {
   nextBtn.addEventListener('click', nextQuestion);
   testDirection.addEventListener('change', () => {
     direction = parseInt(testDirection.value);
-    shuffleAndShow();
+    startRound();
   });
   dataSelect.addEventListener('change', applyFilter);
   themeToggle.addEventListener('click', toggleTheme);

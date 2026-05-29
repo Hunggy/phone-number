@@ -6,6 +6,7 @@ function initApp() {
   let options = [];
   let correctIndex = -1;
   let answered = false;
+  let triedOptions = [];
   let direction = 0; // 0: job->phone, 1: phone->job
   let totalCount = 0;
   let correctCount = 0;
@@ -80,6 +81,7 @@ function initApp() {
 
   function showQuestion() {
     answered = false;
+    triedOptions = [];
     nextBtn.disabled = true;
     optionBtns.forEach(btn => {
       btn.classList.remove('correct', 'wrong');
@@ -101,7 +103,11 @@ function initApp() {
   function generateOptions() {
     const correctAnswer = direction === 0 ? currentQuestion.phone : currentQuestion.name;
     const pool = filteredData.filter((_, i) => i !== currentIndex);
-    const shuffled = pool.sort(() => Math.random() - 0.5).slice(0, 3);
+    const available = pool.filter(p => {
+      const val = direction === 0 ? p.phone : p.name;
+      return !triedOptions.includes(val);
+    });
+    const shuffled = available.sort(() => Math.random() - 0.5).slice(0, 3);
     const wrongAnswers = shuffled.map(p => direction === 0 ? p.phone : p.name);
 
     options = [correctAnswer, ...wrongAnswers].sort(() => Math.random() - 0.5);
@@ -117,26 +123,24 @@ function initApp() {
 
   function selectOption(index) {
     if (answered) return;
-    answered = true;
-    totalCount++;
-
-    optionBtns.forEach(btn => btn.disabled = true);
 
     if (index === correctIndex) {
-      optionBtns[index].classList.add('correct');
+      answered = true;
+      totalCount++;
       correctCount++;
+      optionBtns.forEach(btn => btn.disabled = true);
+      optionBtns[index].classList.add('correct');
       showToast('正确!');
+      updateProgress();
+      nextBtn.disabled = false;
+      setTimeout(() => { if (answered) nextQuestion(); }, 800);
     } else {
       optionBtns[index].classList.add('wrong');
-      optionBtns[correctIndex].classList.add('correct');
+      optionBtns[index].disabled = true;
       showToast('错误!');
-    }
-
-    updateProgress();
-    nextBtn.disabled = false;
-
-    if (index === correctIndex) {
-      setTimeout(() => { if (answered) nextQuestion(); }, 800);
+      triedOptions.push(options[index]);
+      generateOptions();
+      renderOptions();
     }
   }
 

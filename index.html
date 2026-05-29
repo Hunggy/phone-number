@@ -11,6 +11,7 @@
     <header>
       <h1>职位电话匹配测试</h1>
       <div class="toolbar">
+        <button id="browseBtn" class="btn-browse" title="浏览职业和电话">📋 浏览</button>
         <button id="themeToggle" class="btn-icon" title="切换主题">🌙</button>
         <button id="helpBtn" class="btn-icon" title="帮助">❓</button>
       </div>
@@ -46,6 +47,15 @@
         <span>Enter 下一题</span>
       </div>
     </div>
+  </div>
+
+  <div id="browsePanel" class="browse-panel">
+    <div class="browse-header">
+      <h2>📋 职业电话浏览</h2>
+      <button id="closeBrowseBtn" class="btn-close-browse">返回测试</button>
+    </div>
+    <input type="text" id="browseSearch" class="browse-search" placeholder="搜索职位或电话...">
+    <div id="browseList" class="browse-list"></div>
   </div>
 
   <div id="toast" class="toast"></div>

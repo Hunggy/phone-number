@@ -22,6 +22,11 @@ function initApp() {
   const helpModal = document.getElementById('helpModal');
   const closeHelp = document.getElementById('closeHelp');
   const toast = document.getElementById('toast');
+  const browseBtn = document.getElementById('browseBtn');
+  const browsePanel = document.getElementById('browsePanel');
+  const closeBrowseBtn = document.getElementById('closeBrowseBtn');
+  const browseSearch = document.getElementById('browseSearch');
+  const browseList = document.getElementById('browseList');
 
   async function loadData() {
     try {
@@ -178,7 +183,16 @@ function initApp() {
     if (e.target === helpModal) helpModal.classList.remove('active');
   });
 
+  browseBtn.addEventListener('click', openBrowse);
+  closeBrowseBtn.addEventListener('click', closeBrowse);
+  browseSearch.addEventListener('input', (e) => renderBrowseList(e.target.value));
+
   document.addEventListener('keydown', (e) => {
+    if (browsePanel.classList.contains('active')) {
+      if (e.key === 'Escape') closeBrowse();
+      return;
+    }
+
     if (helpModal.classList.contains('active')) {
       if (e.key === 'Escape') helpModal.classList.remove('active');
       return;
@@ -195,6 +209,43 @@ function initApp() {
       }
     }
   });
+
+  function renderBrowseList(filter = '') {
+    const keyword = filter.toLowerCase();
+    let items = [];
+    data.forEach(dept => {
+      dept.positions.forEach(p => {
+        const matchName = p.name.toLowerCase().includes(keyword);
+        const matchPhone = p.phone.toLowerCase().includes(keyword);
+        if (!keyword || matchName || matchPhone) {
+          items.push({ name: p.name, phone: p.phone, dept: dept.name });
+        }
+      });
+    });
+
+    if (items.length === 0) {
+      browseList.innerHTML = '<div class="browse-empty">无匹配结果</div>';
+      return;
+    }
+
+    browseList.innerHTML = items.map(item => `
+      <div class="browse-item">
+        <div class="browse-item-job">${item.name}</div>
+        <div class="browse-item-phone">${item.phone}</div>
+        ${item.dept !== '全部' ? `<div class="browse-item-dept">${item.dept}</div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  function openBrowse() {
+    browseSearch.value = '';
+    renderBrowseList();
+    browsePanel.classList.add('active');
+  }
+
+  function closeBrowse() {
+    browsePanel.classList.remove('active');
+  }
 
   loadTheme();
   loadData();

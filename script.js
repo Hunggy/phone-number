@@ -40,7 +40,7 @@ function initApp() {
       const json = await res.json();
       data = json.departments || [];
       populateSelect();
-      startRound();
+      applyFilter();
     } catch (e) {
       showToast('数据加载失败');
     }

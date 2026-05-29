@@ -134,6 +134,10 @@ function initApp() {
 
     updateProgress();
     nextBtn.disabled = false;
+
+    if (index === correctIndex) {
+      setTimeout(() => { if (answered) nextQuestion(); }, 800);
+    }
   }
 
   function nextQuestion() {
